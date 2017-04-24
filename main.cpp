@@ -18,10 +18,19 @@ int main()
 {
 	srand(time(NULL));
 
-	int * T = question(3, 0, 1);
-	int pm = 0;
-	int index = resoudre(T, 1, 0, 1, 2, pm);
-	cout << index << " et " << pm << endl;
+	int TEST = 1; // Modifiez cette valeur pour faire plus de tests
+
+	for(int i = 1 ; i <= TEST ; i++)
+	{
+		if(valider(pow(3, i)))
+		{
+			cout << "Fonctionne pour " << pow(3, i) << " boules :)" << endl;
+		}
+		else
+		{
+			cout << "Ne fonctionne pas pour " << pow(3, i) << " boules :(" << endl;
+		}
+	}
 }
 
 int * question(int n, int x, int d)
@@ -55,6 +64,8 @@ void printTable(int * T, int n)
 
 int balance(int * T, int n, int d1, int d2)
 {
+	static int tour = 0;
+
 	if(d1 > d2)
 	{
 		return balance(T, n, d2, d1); //Pour éviter un problème de signe
@@ -67,6 +78,9 @@ int balance(int * T, int n, int d1, int d2)
 		sum1 += T[d1 + i];
 		sum2 += T[d2 + i];
 	}
+
+	tour++;
+	cout << "TOUR " << tour << endl;
 
 	return sum1 - sum2;
 }
@@ -85,36 +99,44 @@ int weight(int * T, int n, int d)
 
 int resoudre(int * T, int n, int d1, int d2, int d3, int & pm)
 {
-	if(n > 1 && pm == 0)
-	{
-		int cur = balance(T, n, d1, d2);
-		int cur2 = balance(T, n, d1, d3);
+	int cur = balance(T, n, d1, d2);
 
-		pm = cur > 0 || cur2 < 0 ? 1 : -1;
-
-		if(cur == 0)
-		{
-			return resoudre(T, n / 3, d3, d3 + (n / 3), d3 + (n / 3 * 2), pm);
-		}
-
-		if(cur2 == 0)
-		{
-			return resoudre(T, n / 3, d2, d2 + (n / 3), d2 + (n / 3 * 2), pm);
-		}
-
-		return resoudre(T, n / 3, d1, d1 + (n / 3), d1 + (n / 3 * 2), pm);
-	}
-	
 	if(pm != 0)
 	{
-		int cur = balance(T, n, d1, d2);
+		if(cur == 0)
+		{
+			return n == 1 ? d3 : resoudre(T, n / 3, d3, d3 + (n / 3), d3 + (n / 3 * 2), pm);
+		}
+		else if((cur > 0 && pm > 0) || (cur < 0 && pm < 0))
+		{
+			return n == 1 ? d1 : resoudre(T, n / 3, d1, d1 + (n / 3), d1 + (n / 3 * 2), pm);
+		}
+		else if((cur < 0 && pm > 0) || (cur > 0 && pm < 0))
+		{
+			return n == 1 ? d2 : resoudre(T, n / 3, d2, d2 + (n / 3), d2 + (n / 3 * 2), pm);
+		}
+	}
+	else
+	{
+		int cur2 = balance(T, n, d1, d3);
 
 		if(cur == 0)
 		{
-			return resoudre(T, n / 3, d3, d3 + (n / 3), d3 + (n / 3 * 2), pm);
+			pm = cur2 < 0 ? 1 : -1;
+			return n == 1 ? d3 : resoudre(T, n / 3, d3, d3 + (n / 3), d3 + (n / 3 * 2), pm);
+		}
+		else if((cur > 0 && cur2 > 0) || (cur < 0 && cur2 < 0))
+		{
+			pm = cur > 0 ? 1 : -1;
+			return n == 1 ? d1 : resoudre(T, n / 3, d1, d1 + (n / 3), d1 + (n / 3 * 2), pm);
+		}
+		else if((cur > 0 && cur2 == 0) || (cur < 0 && cur2 == 0))
+		{
+			pm = cur > 0 ? -1 : 1;
+			return n == 1 ? d2 : resoudre(T, n / 3, d2, d2 + (n / 3), d2 + (n / 3 * 2), pm);
 		}
 
-		if(weight(T, n, d1))
+		return -1;
 	}
 }
 
@@ -129,7 +151,7 @@ bool verifier(int * T, int n, int s, int pm)
 
 	if(T[s] != T[r1] && T[s] != T[r2])
 	{
-		if((T[s] - T[r1] > 0 && pm == 1) || (T[s] - T[r1] < 0 && pm == -1))
+		if((T[s] > T[r1] && pm > 0) || (T[s] < T[r1] && pm < 0))
 		{
 			return true;
 		}
@@ -156,16 +178,21 @@ bool valider(int n)
 	{
 		int pm = 0;
 		int * T = question(n, i, 1);
+		int index = resoudre(T, n / 3, 0, n / 3, 2 * n / 3, pm);
 
-		if(!verifier(T, n, resoudre(T, n, 0, n / 3, 2 * n / 3, pm), pm))
+		if(!verifier(T, n, index, pm))
 		{
+			cout << "Pas bon pour " << n << " (" << i << ") +" << endl;
 			return false;
 		}
 
 		T = question(n, i, -1);
+		pm = 0;
+		index = resoudre(T, n / 3, 0, n / 3, 2 * n / 3, pm);
 
-		if(!verifier(T, n, resoudre(T, n, 0, n / 3, 2 * n / 3, pm), pm))
+		if(!verifier(T, n, index, pm))
 		{
+			cout << "Pas bon pour " << n << " (" << i << ") -" << endl;
 			return false;
 		}
 	}
